@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>আয়াতের মজার খেলা</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;700;800&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Baloo Da 2', cursive, sans-serif;
+            background: linear-gradient(135deg, #f3e5f5 0%, #f8bbd0 100%);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            overflow-x: hidden; user-select: none; padding: 10px;
+        }
+
+        .emoji-text { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif; }
+
+        #game-wrapper {
+            background: #ffffff; padding: 2rem 1rem; border-radius: 30px;
+            box-shadow: 0 15px 40px rgba(233, 30, 99, 0.15), inset 0 0 0 6px rgba(255, 255, 255, 0.8);
+            text-align: center; z-index: 10; width: 100%; max-width: 500px; position: relative;
+        }
+
+        .mascot-container { position: relative; margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; }
+        .speech-bubble {
+            background: #fce4ec; border: 3px solid #f06292; border-radius: 20px; padding: 10px 15px;
+            font-size: 1.2rem; color: #d81b60; font-weight: bold; box-shadow: 0 5px 10px rgba(240, 98, 146, 0.2);
+            position: relative; margin-bottom: 15px; animation: floatBubble 3s ease-in-out infinite; max-width: 95%; line-height: 1.3;
+        }
+        .speech-bubble::after {
+            content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+            border-width: 10px 10px 0; border-style: solid; border-color: #f06292 transparent transparent transparent;
+        }
+        .mascot-avatar { font-size: 4.5rem; animation: bounceMascot 2s infinite alternate; }
+
+        @keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @keyframes bounceMascot { 0% { transform: translateY(0) rotate(-3deg); } 100% { transform: translateY(-8px) rotate(3deg); } }
+
+        .header-info { display: flex; justify-content: center; margin-bottom: 10px; }
+        .info-card { background: #fff3e0; padding: 5px 20px; border-radius: 20px; border: 3px solid #ffb74d; font-size: 1.3rem; }
+        h1 { color: #9c27b0; margin-bottom: 5px; font-size: 2.2rem; line-height: 1.2; }
+
+        .equation { font-size: 2.2rem; margin: 1rem 0; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .emoji-group {
+            background: #f3e5f5; padding: 10px; border-radius: 20px; border: 3px dashed #ba68c8;
+            display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; align-items: center; min-height: 60px;
+        }
+        .operator { font-size: 2.8rem; color: #ec407a; font-weight: bold; }
+
+        .options { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 1.5rem; }
+        .option {
+            flex: 1 1 25%; min-width: 70px; max-width: 120px; font-size: 2rem; background: #ffffff;
+            border: 4px solid #ce93d8; border-radius: 25px; cursor: pointer; display: flex; flex-wrap: wrap;
+            justify-content: center; align-items: center; min-height: 70px; box-shadow: 0 6px 0 #ab47bc;
+            padding: 8px; transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .option:active { transform: translateY(6px); box-shadow: 0 0 0 #ab47bc; }
+        .option.correct-pop { border-color: #66bb6a !important; background: #e8f5e9 !important; box-shadow: 0 6px 0 #43a047 !important; }
+
+        .shake { animation: shake 0.4s; border-color: #ef5350 !important; background: #ffebee !important; box-shadow: 0 6px 0 #d32f2f !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        .btn-main {
+            margin-top: 10px; padding: 12px 25px; font-size: 1.5rem; font-family: inherit; font-weight: bold;
+            background: #ec407a; color: white; border: none; border-radius: 40px; cursor: pointer;
+            box-shadow: 0 6px 0 #c2185b; width: 90%; max-width: 250px;
+        }
+        .btn-main:active { transform: translateY(6px); box-shadow: 0 0 0 #c2185b; }
+
+        .overlay-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff;
+            border-radius: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20; padding: 15px;
+        }
+
+        #game-area, #win-screen { display: none; width: 100%; }
+        #next-btn-container { height: 60px; margin-top: 15px; }
+
+        @media (max-width: 360px) {
+            h1 { font-size: 1.8rem; } .mascot-avatar { font-size: 3.5rem; } .equation { font-size: 1.8rem; }
+            .operator { font-size: 2.2rem; } .option { font-size: 1.5rem; min-height: 60px; } .speech-bubble { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <div id="start-screen" class="overlay-screen">
+            <div class="mascot-container">
+                <div class="speech-bubble" id="welcome-speech">ম্যাঁও! আমি এলসা। চলো খেলি!</div>
+                <div class="mascot-avatar emoji-text">🐱</div>
+            </div>
+            <h1>আয়াতের মজার খেলা!</h1>
+            <p style="font-size: 1.2rem; color: #888; margin-bottom: 20px;">ছবি গুনে গুনে মেলাও</p>
+            <button class="btn-main" onclick="startGame()">শুরু করি! 🎀</button>
+        </div>
+
+        <div id="game-area">
+            <div class="header-info"><div class="info-card" id="score-board"></div></div>
+            
+            <div class="mascot-container" style="margin-bottom: 5px;">
+                <div class="speech-bubble" id="mascot-speech">কয়টি ছবি আছে?</div>
+                <div class="mascot-avatar emoji-text" id="mascot-emoji">🐱</div>
+            </div>
+            
+            <div class="equation" id="equation"></div>
+            <div class="options" id="options"></div>
+            
+            <div id="next-btn-container">
+                <button id="next-btn" class="btn-main" style="display: none; background: #ab47bc; box-shadow: 0 6px 0 #7b1fa2;" onclick="loadQuestion()">পরের ছবি ➡️</button>
+            </div>
+        </div>
+
+        <div id="win-screen" class="overlay-screen">
+            <div class="mascot-container">
+                <div class="speech-bubble" id="win-speech">তুমি খুব লক্ষ্মী মেয়ে!</div>
+                <div class="mascot-avatar emoji-text">🐱💖</div>
+            </div>
+            <h2 style="font-size: 2.2rem; color: #ec407a; margin-bottom: 15px;">দারুণ করেছ সোনা!</h2>
+            <button class="btn-main" onclick="nextLevelOrReset()">আবার খেলব! 🌸</button>
+        </div>
+    </div>
+
+    <script>
+        // পিং/পং সাউন্ড (শুধু বাটন ক্লিক ও ফিডব্যাকের জন্য)
+        let audioCtx;
+        function initAudio() { 
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+        }
+        function playTone(freq, type, duration, vol=0.1, delay=0) {
+            if(!audioCtx) return; 
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+            gainNode.gain.setValueAtTime(vol, audioCtx.currentTime + delay); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + duration);
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(audioCtx.currentTime + delay); osc.stop(audioCtx.currentTime + delay + duration);
+        }
+        function playCorrect() { playTone(659, 'sine', 0.1, 0.2, 0); playTone(880, 'sine', 0.2, 0.2, 0.1); }
+        function playWrong() { playTone(300, 'sawtooth', 0.3, 0.1, 0); }
+
+        function triggerFireworks() {
+            var duration = 2.5 * 1000; var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100, colors: ['#f48fb1', '#ce93d8', '#ffffff'] };
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random() * 0.2 + 0.1, y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random() * 0.2 + 0.7, y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        // ====== কাস্টম ভয়েস সেটআপ ======
+        const customVoices = {
+            welcome: new Audio('sounds/welcome.mp3'),
+            start: new Audio('sounds/start.mp3'),
+            correct: new Audio('sounds/correct.mp3'),
+            wrong: new Audio('sounds/wrong.mp3'),
+            win: new Audio('sounds/win.mp3')
+        };
+
+        // অডিও যাতে একটার উপর আরেকটা না বাজে, সেজন্য আগেরটা থামিয়ে দেওয়া
+        function playCustomVoice(type) {
+            Object.values(customVoices).forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
+            });
+            
+            if(customVoices[type]) {
+                customVoices[type].play().catch(e => console.log("Audio play requires user interaction first."));
+            }
+        }
+
+        // ====== গেম ডেটা ও লজিক ======
+        const safeEmojis = ['🦄', '🦋', '🌸', '🎀', '🍓', '👑', '🧸', '🍭', '🍦', '🐥', '🎈', '🍎'];
+        
+        // শুধু টেক্সট দেখানোর জন্য
+        const mascotSpeeches = {
+            start: ["ভালো করে গুনে দেখো!"],
+            correct: ["সাবাশ সোনা! একদম ঠিক!"],
+            wrong: ["উফ! আবার গুনে দেখো তো"],
+            win: ["তুমি খুব লক্ষ্মী মেয়ে! দারুণ করেছ!"]
+        };
+
+        let score = 0; const maxScore = 5;
+        let currentCorrectCount = 0; let isAnswered = false;
+
+        function setMascotSpeech(type, elementId = 'mascot-speech') {
+            document.getElementById(elementId).innerText = mascotSpeeches[type][0];
+            playCustomVoice(type); // আপনার রেকর্ড করা কথা প্লে হবে
+        }
+
+        function startGame() { 
+            initAudio(); 
+            document.getElementById('start-screen').style.display = 'none'; 
+            document.getElementById('game-area').style.display = 'block'; 
+            score = 0;
+            updateScoreBoard(); 
+            loadQuestion(); 
+        }
+
+        function updateScoreBoard() { document.getElementById('score-board').innerHTML = `<span class="emoji-text">${'⭐'.repeat(score) + '❔'.repeat(maxScore - score)}</span>`; }
+        function getEmojiString(count, emoji) { return count <= 0 ? '' : Array(count).fill(emoji).join(''); }
+
+        function loadQuestion() {
+            isAnswered = false;
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('options').innerHTML = '';
+            setMascotSpeech('start');
+            document.getElementById('mascot-emoji').innerText = '🐱';
+            
+            const emoji = safeEmojis[Math.floor(Math.random() * safeEmojis.length)];
+            let num1 = Math.floor(Math.random() * 3) + 1; 
+            let num2 = Math.floor(Math.random() * 2) + 1; 
+            currentCorrectCount = num1 + num2;
+            
+            document.getElementById('equation').innerHTML = `
+                <div class="emoji-group emoji-text">${getEmojiString(num1, emoji)}</div>
+                <div class="operator">+</div>
+                <div class="emoji-group emoji-text">${getEmojiString(num2, emoji)}</div>
+                <div class="operator">=</div><div class="operator">?</div>
+            `;
+            generateOptions(currentCorrectCount, emoji);
+        }
+
+        function generateOptions(correctAnswer, emoji) {
+            let options = new Set();
+            options.add(correctAnswer);
+            while(options.size < 3) {
+                let wrong = correctAnswer + Math.floor(Math.random() * 3) - 1;
+                if (wrong > 0 && wrong <= 6 && wrong !== correctAnswer) options.add(wrong);
+            }
+            let optionsArr = Array.from(options).sort(() => Math.random() - 0.5);
+            const optionsContainer = document.getElementById('options');
+            optionsArr.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'option emoji-text';
+                btn.innerHTML = getEmojiString(opt, emoji); 
+                btn.onclick = () => checkAnswer(opt, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, btn) {
+            if (isAnswered) return;
+            if (selected === currentCorrectCount) {
+                isAnswered = true; playCorrect(); btn.classList.add('correct-pop');
+                score++; updateScoreBoard(); setMascotSpeech('correct');
+                document.getElementById('mascot-emoji').innerText = '🐱✨';
+                
+                if (score >= maxScore) {
+                    triggerFireworks();
+                    setTimeout(() => { showWinScreen(); setMascotSpeech('win', 'win-speech'); }, 1500);
+                } else {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#f48fb1', '#ce93d8', '#ffffff'] });
+                    document.getElementById('next-btn').style.display = 'inline-block';
+                }
+            } else {
+                playWrong(); setMascotSpeech('wrong'); document.getElementById('mascot-emoji').innerText = '🐱💧';
+                btn.classList.add('shake');
+                setTimeout(() => { btn.classList.remove('shake'); setMascotSpeech('start'); document.getElementById('mascot-emoji').innerText = '🐱'; }, 1500);
+            }
+        }
+
+        function showWinScreen() { document.getElementById('game-area').style.display = 'none'; document.getElementById('win-screen').style.display = 'flex'; }
+        function nextLevelOrReset() { document.getElementById('win-screen').style.display = 'none'; startGame(); }
+        
+        // স্টার্ট স্ক্রিনে ক্লিক করলেই ওয়েলকাম সাউন্ড বাজবে (CORS ও Autoplay পলিসির জন্য ইউজার ইন্টারেকশন লাগে)
+        document.body.addEventListener('click', function initSpeech() {
+            if(!window.audioInitialized) {
+                playCustomVoice('welcome');
+                window.audioInitialized = true;
+            }
+        }, {once: true});
+    </script>
+</body>
+</html>
